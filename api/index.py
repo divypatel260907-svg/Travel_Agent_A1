@@ -13,3 +13,4 @@ for p in (_ROOT, _PKG):
 from app import create_app
 
 app = create_app("production")
+
