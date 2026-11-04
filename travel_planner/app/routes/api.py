@@ -164,12 +164,14 @@ def create_plan():
         # Step 1 — Groq drafts the itinerary
         plan = _groq_plan(query, profile)
 
-        # Step 2 — Gemini reviews budget, pace, weather
-        try:
-            plan = _gemini_review(plan, query)
-        except Exception as gem_exc:
-            # Gemini review is best-effort; return Groq plan if Gemini fails
-            plan["_gemini_skipped"] = str(gem_exc)[:120]
+        # Step 2 — Gemini review (skip if not explicitly desired or timeout quickly)
+        # Note: Gemini Free Tier has aggressive rate limits (limit: 0/min quota spikes)
+        # Groq already generates a complete day-by-day plan with cost, tips, and weather.
+        if os.getenv("ENABLE_GEMINI_REVIEW", "false").lower() in ("true", "1", "yes"):
+            try:
+                plan = _gemini_review(plan, query)
+            except Exception as gem_exc:
+                plan["_gemini_skipped"] = str(gem_exc)[:120]
 
         return jsonify({"plan": plan})
 
