@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard — Travel Planner AI{% endblock %}
+{% block content %}
+<div style="padding:32px 0 60px;">
+  <div class="section-label">ADMIN</div>
+  <h1 style="font-size:1.8rem;font-weight:700;color:var(--text-1);margin-bottom:28px;">Dashboard</h1>
+
+  <!-- Stats row -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:14px;margin-bottom:36px;">
+    {% set u_count = stats.get('users', 0) if stats.get is defined else (stats.users|default(0)) %}
+    {% set t_count = stats.get('trips', 0) if stats.get is defined else (stats.trips|default(0)) %}
+    {% set b_count = stats.get('bookings', 0) if stats.get is defined else (stats.bookings|default(0)) %}
+    {% for label, val in [('Total Users', u_count), ('Saved Trips', t_count), ('Bookings', b_count)] %}
+    <div class="card" style="text-align:center;">
+      <div style="font-size:32px;font-weight:800;color:var(--text-1);">{{ val }}</div>
+      <div style="font-size:12px;color:var(--text-3);margin-top:4px;letter-spacing:.05em;">{{ label }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Recent users -->
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+    <h2 style="font-size:15px;font-weight:600;color:var(--text-1);">Recent Users</h2>
+    <a href="{{ url_for('admin.users') }}" class="btn btn-ghost" style="padding:4px 10px;font-size:12px;">View all users →</a>
+  </div>
+  <div class="card" style="margin-bottom:28px;overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="text-align:left;padding:10px 14px;color:var(--text-3);font-weight:600;">Email</th>
+          <th style="text-align:left;padding:10px 14px;color:var(--text-3);font-weight:600;">Name</th>
+          <th style="text-align:left;padding:10px 14px;color:var(--text-3);font-weight:600;">Joined</th>
+          <th style="text-align:left;padding:10px 14px;color:var(--text-3);font-weight:600;">Admin</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in recent_users %}
+        <tr style="border-bottom:1px solid rgba(99,145,255,0.06);">
+          <td style="padding:10px 14px;color:var(--text-2);">{{ u.email }}</td>
+          <td style="padding:10px 14px;color:var(--text-2);">{{ u.display_name }}</td>
+          <td style="padding:10px 14px;color:var(--text-3);">{{ u.created_at.strftime('%b %d, %Y') if u.created_at else '—' }}</td>
+          <td style="padding:10px 14px;" class="{{ 'text-success' if u.is_admin else 'text-muted' }}">
+            {{ '✓' if u.is_admin else '—' }}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="4" style="text-align:center;padding:16px;color:var(--text-3);">No registered users yet.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Recent trips -->
+  <h2 style="font-size:15px;font-weight:600;color:var(--text-1);margin-bottom:12px;">Recent Trips</h2>
+  <div class="card" style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="text-align:left;padding:10px 14px;color:var(--text-3);font-weight:600;">Title</th>
+          <th style="text-align:left;padding:10px 14px;color:var(--text-3);font-weight:600;">Owner</th>
+          <th style="text-align:left;padding:10px 14px;color:var(--text-3);font-weight:600;">Created</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in recent_trips %}
+        <tr style="border-bottom:1px solid rgba(99,145,255,0.06);">
+          <td style="padding:10px 14px;color:var(--text-2);">
+            <a href="{{ url_for('trips.view_trip', trip_id=t.id) }}" style="color:var(--accent);">{{ t.title }}</a>
+          </td>
+          <td style="padding:10px 14px;color:var(--text-3);">{{ t.owner.email if t.owner else '—' }}</td>
+          <td style="padding:10px 14px;color:var(--text-3);">{{ t.created_at.strftime('%b %d, %Y') if t.created_at else '—' }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="3" style="text-align:center;padding:16px;color:var(--text-3);">No trips generated yet.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

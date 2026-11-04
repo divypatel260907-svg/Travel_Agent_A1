@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Travel Planner AI{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+  <!-- Plan-My-Trip sticky nav (shown only after hero scroll — JS controlled) -->
+  <nav class="plan-nav" id="plan-nav" aria-hidden="true">
+    <div class="plan-nav-inner">
+      <a href="/" class="plan-nav-logo">
+        <svg viewBox="0 0 40 40" fill="none" class="plan-nav-logo-svg"><circle cx="20" cy="20" r="18" stroke="white" stroke-width="1.2" stroke-opacity="0.5"/><path d="M20 6l3.5 10H34l-8.5 6.5 3.5 10L20 26l-9 6.5 3.5-10L6 16h10.5Z" fill="white" fill-opacity="0.8"/></svg>
+        <span class="plan-nav-brand">VOYA</span>
+      </a>
+      <div class="plan-nav-fields">
+        <button class="plan-nav-field">
+          <span class="plan-nav-field-icon">📍</span>
+          <span class="plan-nav-field-body">
+            <span class="plan-nav-field-label">Destination</span>
+            <span class="plan-nav-field-val">Where to?</span>
+          </span>
+        </button>
+        <div class="plan-nav-divider"></div>
+        <button class="plan-nav-field">
+          <span class="plan-nav-field-icon">📅</span>
+          <span class="plan-nav-field-body">
+            <span class="plan-nav-field-label">Dates</span>
+            <span class="plan-nav-field-val">Add dates</span>
+          </span>
+        </button>
+        <div class="plan-nav-divider"></div>
+        <button class="plan-nav-field">
+          <span class="plan-nav-field-icon">👥</span>
+          <span class="plan-nav-field-body">
+            <span class="plan-nav-field-label">Travelers</span>
+            <span class="plan-nav-field-val">Add guests</span>
+          </span>
+        </button>
+      </div>
+      <div class="plan-nav-actions">
+        <button class="plan-nav-cta" onclick="document.getElementById('query').scrollIntoView({behavior:'smooth',block:'center'});document.getElementById('query').focus()">
+          Plan My Trip →
+        </button>
+        {% if current_user.is_authenticated %}
+        <button class="btn btn-profile plan-nav-profile" onclick="openProfile()">
+          <span class="profile-avatar" id="plan-nav-avatar">{{ current_user.display_name[0].upper() }}</span>
+        </button>
+        {% else %}
+        <a href="{{ url_for('auth.login') }}" class="btn btn-ghost" style="padding:6px 14px;font-size:13px;border-radius:999px;">Sign In</a>
+        <a href="{{ url_for('auth.register') }}" class="btn btn-primary" style="padding:6px 14px;font-size:13px;border-radius:999px;">Register</a>
+        {% endif %}
+      </div>
+    </div>
+  </nav>
+
+  <!-- Base nav (homepage: hidden behind cinematic hero; other pages: visible) -->
+  <nav class="nav" id="base-nav">
+    <div class="nav-inner">
+      <a href="/" class="nav-logo">
+        <div class="nav-logo-icon">✈️</div>
+        <div>
+          <div class="nav-logo-name">Travel Planner AI</div>
+          <div class="nav-logo-sub">MULTI-AGENT SYSTEM</div>
+        </div>
+      </a>
+      <div class="nav-links">
+        <a href="/" class="nav-link">Home</a>
+        {% if current_user.is_authenticated %}
+          <a href="{{ url_for('trips.list_trips') }}" class="nav-link">My Trips</a>
+          {% if current_user.is_admin %}
+            <a href="{{ url_for('admin.dashboard') }}" class="nav-link">Admin</a>
+          {% endif %}
+        {% endif %}
+        {% if plan_active %}
+          <a href="/clear" class="nav-link nav-link-danger">✕ Clear plan</a>
+        {% endif %}
+        {% if current_user.is_authenticated %}
+          <button class="btn btn-profile" id="open-profile-btn" onclick="openProfile()">
+            <span class="profile-avatar" id="profile-avatar">{{ current_user.display_name[0].upper() }}</span>
+            {{ current_user.display_name }}
+          </button>
+          <a href="{{ url_for('auth.logout') }}" class="nav-link" style="color:var(--text-3);font-size:12px;">Sign out</a>
+        {% else %}
+          <a href="{{ url_for('auth.login') }}" class="nav-link">Sign in</a>
+          <a href="{{ url_for('auth.register') }}" class="btn btn-primary" style="padding:6px 14px;font-size:13px;">Register</a>
+        {% endif %}
+      </div>
+    </div>
+  </nav>
+
+  <!-- Profile Modal -->
+  <div class="modal-backdrop hidden" id="profile-backdrop" onclick="closeProfile(event)">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-header">
+        <div class="modal-title-row">
+          <span class="modal-icon">🧭</span>
+          <h2 class="modal-title" id="modal-title">My Travel Profile</h2>
+        </div>
+        <button class="modal-close" onclick="closeProfile()" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="field-group">
+          <label class="field-label">YOUR NAME</label>
+          <input class="field-input" id="p-name" type="text" placeholder="What should we call you?" />
+        </div>
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label">HOME CITY</label>
+            <input class="field-input" id="p-city" type="text" placeholder="e.g. New York" />
+          </div>
+          <div class="field-group">
+            <label class="field-label">TYPICAL BUDGET</label>
+            <select class="field-input" id="p-budget">
+              <option value="">Select…</option>
+              <option value="budget">Budget — under $1 000</option>
+              <option value="mid">Mid-range — $1 000–3 000</option>
+              <option value="premium">Premium — $3 000+</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label">TRAVEL STYLE</label>
+            <select class="field-input" id="p-style">
+              <option value="">Select…</option>
+              <option value="relaxed">😌 Relaxed — slow, few stops</option>
+              <option value="balanced">⚖️ Balanced — mix of both</option>
+              <option value="packed">🚀 Packed — see everything</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">TRAVEL GROUP</label>
+            <select class="field-input" id="p-group">
+              <option value="">Select…</option>
+              <option value="solo">🧍 Solo</option>
+              <option value="couple">💑 Couple</option>
+              <option value="family">👨‍👩‍👧 Family</option>
+              <option value="friends">👯 Friends</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">DIETARY NEEDS</label>
+          <input class="field-input" id="p-diet" type="text" placeholder="e.g. vegetarian, halal, gluten-free" />
+        </div>
+        <div class="field-group">
+          <label class="field-label">INTERESTS</label>
+          <input class="field-input" id="p-interests" type="text" placeholder="e.g. food, temples, museums, hiking" />
+        </div>
+        <div class="field-group">
+          <label class="field-label">MOBILITY</label>
+          <label class="toggle-row">
+            <span class="toggle-label">No heavy walking</span>
+            <div class="toggle-wrap">
+              <input type="checkbox" id="p-mobility" class="toggle-input" />
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            </div>
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeProfile()">Cancel</button>
+        <button class="btn btn-save" onclick="saveProfile()">💾 Save Profile</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Flash messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-wrap">
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">
+            <span>{{ '⚠️' if category == 'error' else '💡' }} {{ message }}</span>
+            <button onclick="this.parentElement.remove()" class="flash-close">✕</button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- Main -->
+  <main class="main">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-inner">
+      Built with <span class="footer-accent">IBM Bob</span> · Free APIs only · Zero paid services
+    </div>
+  </footer>
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

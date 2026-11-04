@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% block title %}My Trips — Travel Planner AI{% endblock %}
+{% block content %}
+
+{% set trips = trips|default([]) %}
+{% set bookings = bookings|default([]) %}
+{% set recommendations = recommendations|default([]) %}
+
+<div style="max-width:900px;margin:0 auto;padding:40px 0 60px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;">
+    <div>
+      <div class="section-label">YOUR JOURNEYS</div>
+      <h1 style="font-size:1.8rem;font-weight:700;color:var(--text-1);letter-spacing:-0.5px;margin-top:4px;">Saved Trips
+      </h1>
+    </div>
+    <a href="{{ url_for('main.index') }}" class="btn btn-primary">+ Plan new trip</a>
+  </div>
+
+  {% if trips and (trips|length > 0) %}
+  <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:48px;">
+    {% for trip in trips %}
+    <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 22px;">
+      <div style="min-width:0;">
+        <div
+          style="font-size:15px;font-weight:600;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+          {{ trip.title }}
+        </div>
+        <div style="font-size:12px;color:var(--text-3);margin-top:3px;">
+          {{ trip.created_at.strftime('%b %d, %Y') if trip.created_at else '—' }}
+          {% if trip.destination %} · {{ trip.destination }}{% endif %}
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-shrink:0;">
+        <a href="{{ url_for('trips.view_trip', trip_id=trip.id) }}" class="btn btn-ghost"
+          style="padding:6px 14px;font-size:13px;">View</a>
+        <button type="button" class="btn btn-ghost" style="padding:6px 14px;font-size:13px;"
+          data-trip-id="{{ trip.id }}" onclick="shareTrip(parseInt(this.dataset.tripId),this)">Share</button>
+        <form method="POST" action="{{ url_for('trips.delete_trip', trip_id=trip.id) }}"
+          onsubmit="return confirm('Delete this trip?');" style="margin:0;">
+          <button class="btn btn-ghost" style="padding:6px 14px;font-size:13px;color:var(--danger);"
+            type="submit">Delete</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div style="text-align:center;padding:50px 20px 40px;color:var(--text-3);margin-bottom:32px;">
+    <div style="font-size:42px;margin-bottom:12px;">🗺️</div>
+    <p style="font-size:15px;color:var(--text-2);">No saved trips yet.</p>
+    <a href="{{ url_for('main.index') }}" class="btn btn-primary" style="margin-top:16px;display:inline-flex;">Plan your
+      first trip</a>
+  </div>
+  {% endif %}
+
+  <!-- ── Personalized Recommendations ────────────────────────────────────────── -->
+  {% if recommendations and (recommendations|length > 0) %}
+  <div style="margin-top:20px;margin-bottom:48px;">
+    <div class="section-label">CURATED FOR YOU</div>
+    <h2 style="font-size:1.4rem;font-weight:700;color:var(--text-1);margin-top:4px;margin-bottom:18px;">
+      Personalized Recommendations
+    </h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:16px;">
+      {% for rec in recommendations %}
+      <div class="card" style="display:flex;flex-direction:column;justify-content:space-between;padding:20px;">
+        <div>
+          <div style="font-size:32px;margin-bottom:8px;">{{ rec.icon }}</div>
+          <div style="font-size:16px;font-weight:700;color:var(--text-1);">{{ rec.destination }}</div>
+          <div style="font-size:12px;color:var(--accent);font-weight:500;margin-top:2px;">{{ rec.tagline }}</div>
+          <p style="font-size:13px;color:var(--text-2);margin-top:8px;line-height:1.5;">{{ rec.image_cue }}</p>
+        </div>
+        <div style="margin-top:16px;">
+          <a href="{{ url_for('main.index') }}" class="btn btn-secondary"
+            style="width:100%;font-size:13px;padding:8px 12px;text-align:center;" data-prompt="{{ rec.prompt|e }}"
+            onclick="sessionStorage.setItem('prefill_prompt', this.getAttribute('data-prompt'));">
+            Plan this trip →
+          </a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Booking / Payment History ───────────────────────────────────────────── -->
+  <div style="margin-top:20px;">
+    <div class="section-label">PAYMENTS & RESERVATIONS</div>
+    <h2 style="font-size:1.4rem;font-weight:700;color:var(--text-1);margin-top:4px;margin-bottom:18px;">
+      Booking History
+    </h2>
+    {% if bookings and (bookings|length > 0) %}
+    <div class="card" style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border);">
+            <th style="text-align:left;padding:12px 14px;color:var(--text-3);font-weight:600;">Ref / Date</th>
+            <th style="text-align:left;padding:12px 14px;color:var(--text-3);font-weight:600;">Description</th>
+            <th style="text-align:left;padding:12px 14px;color:var(--text-3);font-weight:600;">Status</th>
+            <th style="text-align:right;padding:12px 14px;color:var(--text-3);font-weight:600;">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in bookings %}
+          <tr style="border-bottom:1px solid rgba(99,145,255,0.06);">
+            <td style="padding:12px 14px;color:var(--text-3);">
+              <div style="font-weight:600;color:var(--text-2);">{{ b.reference or ('#' ~ b.id) }}</div>
+              <div style="font-size:11px;">{{ b.created_at.strftime('%b %d, %Y') if b.created_at else '—' }}</div>
+            </td>
+            <td style="padding:12px 14px;color:var(--text-1);">{{ b.description }}</td>
+            <td style="padding:12px 14px;">
+              {% if b.status == 'confirmed' or b.status == 'paid' %}
+              <span class="tag tag-green">{{ b.status|title }}</span>
+              {% else %}
+              <span class="tag tag-blue">{{ b.status|title }}</span>
+              {% endif %}
+            </td>
+            <td style="padding:12px 14px;text-align:right;font-weight:600;color:var(--text-1);">
+              {{ b.amount_display if b.amount_display is defined else (b.currency ~ ' ' ~ b.amount_cents) }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="card" style="padding:24px;text-align:center;color:var(--text-3);">
+      <p style="font-size:13px;">No bookings or payment transactions yet.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div id="share-toast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:#1a1f3a;border:1px solid rgba(79,110,247,0.3);border-radius:12px;
+  padding:12px 20px;font-size:13px;color:var(--text-1);transition:transform .3s ease;z-index:300;display:none;">
+  🔗 Link copied to clipboard!
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+  function copyTextToClipboard(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text);
+    }
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-9999px";
+    textArea.style.top = "-9999px";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    return new Promise((resolve, reject) => {
+      try {
+        const successful = document.execCommand('copy');
+        textArea.remove();
+        successful ? resolve() : reject(new Error('copy command failed'));
+      } catch (err) {
+        textArea.remove();
+        reject(err);
+      }
+    });
+  }
+
+  async function shareTrip(id, btn) {
+    if (!btn) return;
+    const originalText = btn.textContent;
+    btn.textContent = '…';
+    btn.disabled = true;
+
+    try {
+      const r = await fetch(`/trips/${id}/share`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const j = await r.json();
+      if (j && j.url) {
+        try {
+          await copyTextToClipboard(j.url);
+        } catch (_) {
+          prompt('Copy this trip share link:', j.url);
+        }
+        const t = document.getElementById('share-toast');
+        if (t) {
+          t.style.display = 'block';
+          t.style.transform = 'translateX(-50%) translateY(0)';
+          setTimeout(() => {
+            t.style.transform = 'translateX(-50%) translateY(80px)';
+            setTimeout(() => { t.style.display = 'none'; }, 400);
+          }, 2500);
+        }
+        btn.textContent = '✓ Copied';
+        setTimeout(() => {
+          btn.textContent = originalText;
+          btn.disabled = false;
+        }, 1800);
+        return;
+      }
+    } catch (err) {
+      alert('Could not generate share link: ' + (err.message || 'Error'));
+    }
+
+    btn.textContent = originalText;
+    btn.disabled = false;
+  }
+</script>
+{% endblock %}

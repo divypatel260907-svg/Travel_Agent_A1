@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}Travel Planner AI — Plan Your Trip{% endblock %}
+
+{% block head %}
+<style>
+  /* hide base nav on homepage — cinematic hero takes full screen */
+  #base-nav { display: none !important; }
+
+  /* Top nav over cinematic hero */
+  .ch-top-nav {
+    position: absolute;
+    top: 24px;
+    right: 32px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .ch-nav-link {
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 999px;
+    transition: all 0.2s ease;
+  }
+  .ch-nav-link:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.08);
+  }
+  .ch-nav-btn {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(8px);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 18px;
+    border-radius: 999px;
+    transition: all 0.2s ease;
+  }
+  .ch-nav-btn:hover {
+    background: rgba(255, 255, 255, 0.22);
+    border-color: rgba(255, 255, 255, 0.45);
+    transform: translateY(-1px);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ══════════════════════════════════════════════════════════
+     CINEMATIC HERO  (full viewport, scroll-driven)
+══════════════════════════════════════════════════════════ -->
+<!-- Dark curtain lifts slowly on first load -->
+<div class="ch-curtain" id="ch-curtain" aria-hidden="true"></div>
+
+<div class="ch-root" id="ch-root">
+
+  <!-- Top Right Navigation on Hero -->
+  <div class="ch-top-nav">
+    {% if current_user.is_authenticated %}
+      <a href="{{ url_for('trips.list_trips') }}" class="ch-nav-link">My Trips</a>
+      {% if current_user.is_admin %}
+        <a href="{{ url_for('admin.dashboard') }}" class="ch-nav-link">Admin</a>
+      {% endif %}
+      <button class="btn btn-profile" onclick="openProfile()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);">
+        <span class="profile-avatar">{{ current_user.display_name[0].upper() }}</span>
+        {{ current_user.display_name }}
+      </button>
+      <a href="{{ url_for('auth.logout') }}" class="ch-nav-link" style="opacity:0.6;">Sign out</a>
+    {% else %}
+      <a href="{{ url_for('auth.login') }}" class="ch-nav-link">Sign In</a>
+      <a href="{{ url_for('auth.register') }}" class="ch-nav-btn">Register</a>
+    {% endif %}
+  </div>
+
+  <!-- Grain overlay -->
+  <div class="ch-grain" aria-hidden="true"></div>
+
+  <!-- Ambient glow -->
+  <div class="ch-glow" aria-hidden="true"></div>
+
+  <!-- ── Logo centred at top ── -->
+  <div class="ch-logo" id="ch-logo">
+    <svg viewBox="0 0 56 56" fill="none" class="ch-logo-svg">
+      <circle cx="28" cy="28" r="26" stroke="white" stroke-width="1.4" stroke-opacity="0.45"/>
+      <path d="M28 9l4.5 13.5H46l-11 8 4.5 13.5L28 36l-11.5 8 4.5-13.5-11-8h13.5Z"
+            fill="white" fill-opacity="0.82"/>
+    </svg>
+    <span class="ch-logo-name">VOYA</span>
+  </div>
+
+  <!-- ── Headline centred at bottom ── -->
+  <div class="ch-title" id="ch-title">
+    <p class="ch-eyebrow">Luxury Travel · Curated by AI</p>
+    <h1 class="ch-headline">
+      The World<br>
+      <em class="ch-headline-em">Awaits</em>
+    </h1>
+    <p class="ch-tagline">
+      Describe your dream trip. Our agents handle the rest — free, always.
+    </p>
+    <!-- scroll cue -->
+    <div class="ch-scroll-cue" id="ch-scroll-cue">
+      <span class="ch-scroll-label">Scroll</span>
+      <div class="ch-scroll-pill">
+        <span class="ch-scroll-dot"></span>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /ch-root -->
+
+<!-- ── Hero badge + CTA row (below the fold, first visible section) ── -->
+<section class="hero-below animate-in" id="hero-below">
+  <div class="hero-below-inner">
+    <div class="hero-badge">
+      <span class="badge-dot"></span>
+      AI-POWERED TRAVEL PLANNING · MULTI-AGENT · FREE
+    </div>
+    <div class="hero-cta">
+      <button class="btn btn-primary btn-hero" onclick="document.getElementById('query').focus(); document.getElementById('query').scrollIntoView({behavior:'smooth', block:'center'})">
+        ✈️&nbsp; Plan my trip
+      </button>
+      <button class="btn btn-secondary btn-hero" onclick="loadSamplePlan()">
+        📋&nbsp; View sample plan
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ── Quick-start chips ──────────────────────────────────────────────────── -->
+<section class="examples animate-in-d1">
+  <div class="section-label">QUICK START</div>
+  <div class="chips">
+    <button class="chip" data-prompt="5-day romantic trip to Kyoto under $1800 in mid-April, no heavy walking, love food &amp; temples">🏯 Kyoto Couple</button>
+    <button class="chip" data-prompt="Solo adventure in Bangkok for 7 days, $1200 budget, street food addict, fast pace">🌮 Bangkok Solo</button>
+    <button class="chip" data-prompt="Family trip to Rome, 4 days, 2 adults 2 kids, €2000, must see Colosseum">🏛️ Rome Family</button>
+    <button class="chip" data-prompt="Friends weekend in Amsterdam, 3 days, mid-range budget, love cycling &amp; museums">🚲 Amsterdam Crew</button>
+  </div>
+</section>
+
+<!-- ── Form ───────────────────────────────────────────────────────────────── -->
+<section class="card form-card animate-in-d2" id="form-section">
+  <div class="section-label">DESCRIBE YOUR TRIP</div>
+  <textarea
+    id="query"
+    rows="4"
+    class="textarea"
+    placeholder="e.g. 5-day romantic trip to Kyoto under $1800 in mid-April, no heavy walking, love food &amp; temples…"
+  ></textarea>
+  <div class="form-actions">
+    <button class="btn btn-primary" id="submit-btn" onclick="submitPlan()">
+      <span class="btn-text">✈️&nbsp; Plan my trip</span>
+      <span class="btn-loader hidden" aria-hidden="true"></span>
+    </button>
+    <button class="btn btn-ghost" onclick="document.getElementById('query').value=''">
+      ✕ Clear
+    </button>
+  </div>
+</section>
+
+<!-- ── Plan result area ───────────────────────────────────────────────────── -->
+<section id="plan-result" class="hidden"></section>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Sample plan used for "View sample plan" button
+const SAMPLE_PLAN = {
+  summary: "5-day romantic Kyoto trip in mid-April — cherry blossoms, temples, kaiseki dining. Relaxed pace, no heavy walking.",
+  days: [
+    { day: "Day 1", morning: "Arrive, check in near Gion. Stroll Maruyama Park for evening cherry blossoms.", afternoon: "Explore Gion district alleyways and lantern-lit streets.", evening: "Kaiseki dinner at a traditional machiya restaurant.", cost: "$180" },
+    { day: "Day 2", morning: "Fushimi Inari Taisha — lower gates only (easy walking).", afternoon: "Nishiki Market food tour: tofu, pickles, matcha.", evening: "Sake tasting in Pontocho alley.", cost: "$130" },
+    { day: "Day 3", morning: "Arashiyama bamboo grove by rickshaw (no walking stress).", afternoon: "Tenryu-ji garden and boat ride.", evening: "Quiet dinner along the Oi River.", cost: "$160" },
+    { day: "Day 4", morning: "Kinkaku-ji (Golden Pavilion) early to avoid crowds.", afternoon: "Ryoan-ji rock garden — peaceful and flat.", evening: "Nishiki covered shopping arcade, light izakaya dinner.", cost: "$110" },
+    { day: "Day 5", morning: "Philosopher's Path canal walk — canal-side, flat, beautiful.", afternoon: "Heian Shrine gardens.", evening: "Farewell kaiseki, depart.", cost: "$140" }
+  ],
+  budget: "Total est. $720 — well within $1 800 budget. Accommodation ~$900 leaves $180 buffer.",
+  weatherNote: "Mid-April is peak cherry blossom season. Expect 15–20 °C, some light rain. Indoor alternatives ready.",
+  tips: ["Book Fushimi Inari for 7 am to avoid tour groups.", "IC card (Suica) covers all buses and subway.", "Wheelchair-friendly path at Tenryu-ji."]
+};
+</script>
+{% endblock %}

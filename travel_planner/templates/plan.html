@@ -1,0 +1,368 @@
+{% extends "base.html" %}
+{% set plan_active = true %}
+
+{% block title %}Your Trip Plan — Travel Planner AI{% endblock %}
+
+{% block content %}
+
+{% set prefs = plan.preferences if (plan.preferences is defined and plan.preferences) else {} %}
+{% set weather = plan.weather if (plan.weather is defined and plan.weather) else {} %}
+
+<!-- Hero destination banner -->
+<div class="dest-hero animate-in">
+  <div class="dest-hero-bg-icon">
+    {% set dest_str = (prefs.destination or plan.destination or '')|lower %}
+    {% if 'kyoto' in dest_str or 'tokyo' in dest_str %}🗾
+    {% elif 'paris' in dest_str %}🗼
+    {% elif 'rome' in dest_str %}🏛️
+    {% elif 'bangkok' in dest_str or 'singapore' in dest_str %}🌃
+    {% else %}🌍{% endif %}
+  </div>
+  <div class="dest-hero-label">DESTINATION</div>
+  <div class="dest-hero-name">
+    {{ prefs.destination or plan.destination or 'Your Trip' }}
+  </div>
+  <div class="dest-hero-pills">
+    {% if prefs.start_date %}
+    <span class="pill">📅 {{ prefs.start_date }} → {{ prefs.end_date }}</span>
+    {% endif %}
+    {% if prefs.duration_days %}
+    <span class="pill">⏱ {{ prefs.duration_days }} days</span>
+    {% endif %}
+    {% if prefs.group_type %}
+    <span class="pill">👥 {{ prefs.group_type|title }}{% if prefs.group_size %}, {{ prefs.group_size }} pax{% endif
+      %}</span>
+    {% endif %}
+    {% if prefs.budget_amount %}
+    <span class="pill">💰 {% if prefs.budget_currency == 'USD' %}${% elif prefs.budget_currency == 'EUR' %}€{% else %}{{
+      prefs.budget_currency }} {% endif %}{{ "{:,}".format(prefs.budget_amount|int) }}</span>
+    {% endif %}
+    {% if prefs.pace %}
+    <span class="pill">🏃 {{ prefs.pace|title }}</span>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Clarification warning -->
+{% if plan.clarification_needed and plan.clarification_questions %}
+<div class="clarification-box animate-in-d1">
+  <div class="clarification-title">❓ A few things are missing…</div>
+  <ul class="clarification-list">
+    {% for q in plan.clarification_questions %}
+    <li>{{ q }}</li>
+    {% endfor %}
+  </ul>
+  <a href="/" class="btn btn-ghost" style="margin-top:12px;display:inline-block;">← Go back and add details</a>
+</div>
+{% endif %}
+
+<!-- Day-by-Day Itinerary (if full plan generated) -->
+{% if plan.days and (plan.days|length > 0) %}
+<div style="margin-top:32px;margin-bottom:32px;">
+  <div class="plan-days-label">DAY-BY-DAY ITINERARY</div>
+  <div class="plan-days">
+    {% for d in plan.days %}
+    <div class="plan-day-card open">
+      <div class="plan-day-head" onclick="this.closest('.plan-day-card').classList.toggle('open')">
+        <span class="plan-day-name">{{ d.day }}</span>
+        <div style="display:flex;gap:8px;align-items:center;">
+          {% if d.cost %}<span class="plan-day-cost">{{ d.cost }}</span>{% endif %}
+          <span class="plan-day-chevron">▼</span>
+        </div>
+      </div>
+      <div class="plan-day-body">
+        {% if d.morning %}<div class="plan-time-slot"><span class="plan-slot-label">Morning</span><span
+            class="plan-slot-text">{{ d.morning }}</span></div>{% endif %}
+        {% if d.afternoon %}<div class="plan-time-slot"><span class="plan-slot-label">Afternoon</span><span
+            class="plan-slot-text">{{ d.afternoon }}</span></div>{% endif %}
+        {% if d.evening %}<div class="plan-time-slot"><span class="plan-slot-label">Evening</span><span
+            class="plan-slot-text">{{ d.evening }}</span></div>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Two-column: Preferences | Weather -->
+<div class="two-col animate-in-d1">
+
+  <!-- LEFT: Preferences -->
+  <div class="card pref-card">
+    <div class="section-label">PREFERENCES</div>
+
+    <div class="pref-rows">
+      {% if prefs.start_date %}
+      <div class="pref-row"><span class="pref-icon">📅</span><span class="pref-label">Dates</span><span
+          class="pref-val">{{ prefs.start_date }} → {{ prefs.end_date }}</span></div>
+      {% endif %}
+      {% if prefs.duration_days %}
+      <div class="pref-row"><span class="pref-icon">⏱️</span><span class="pref-label">Duration</span><span
+          class="pref-val">{{ prefs.duration_days }} days</span></div>
+      {% endif %}
+      {% if prefs.group_type %}
+      <div class="pref-row"><span class="pref-icon">👥</span><span class="pref-label">Group</span><span
+          class="pref-val">{{ prefs.group_type|title }}{% if prefs.group_size %}, {{ prefs.group_size }} pax{% endif
+          %}</span></div>
+      {% endif %}
+      {% if prefs.budget_amount %}
+      <div class="pref-row"><span class="pref-icon">💰</span><span class="pref-label">Budget</span><span
+          class="pref-val">{{ prefs.budget_currency }} {{ "{:,}".format(prefs.budget_amount|int) }}</span></div>
+      {% endif %}
+      {% if prefs.pace %}
+      <div class="pref-row"><span class="pref-icon">🏃</span><span class="pref-label">Pace</span><span
+          class="pref-val">{{ prefs.pace|title }}</span></div>
+      {% endif %}
+    </div>
+
+    {% if prefs.interests %}
+    <div class="chip-section">
+      <div class="chip-label">INTERESTS</div>
+      <div class="chip-row">
+        {% for item in prefs.interests %}
+        <span class="tag tag-blue">{{ item }}</span>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if prefs.accessibility_needs %}
+    <div class="chip-section">
+      <div class="chip-label">ACCESSIBILITY</div>
+      <div class="chip-row">
+        {% for item in prefs.accessibility_needs %}
+        <span class="tag tag-violet">{{ item }}</span>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if prefs.must_do %}
+    <div class="chip-section">
+      <div class="chip-label">MUST-DO</div>
+      {% for item in prefs.must_do %}
+      <div class="mustdo-item">✦ {{ item }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if prefs.dietary %}
+    <div class="chip-section">
+      <div class="chip-label">DIETARY</div>
+      <div class="chip-row">
+        {% for item in prefs.dietary %}
+        <span class="tag tag-green">{{ item }}</span>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- RIGHT: Weather -->
+  <div class="card weather-card">
+    <div class="section-label">WEATHER FORECAST</div>
+
+    {% if weather and weather.days and (weather.days|length > 0) %}
+    <!-- Safe Metrics Calculation -->
+    {% set days = weather.days %}
+    {% set days_count = days|length %}
+    {% set scores = [] %}
+    {% set rainy_days = [] %}
+    {% for d in days %}
+    {% if d.outdoor_suitability_score is defined and d.outdoor_suitability_score is not none %}
+    {% set _ = scores.append(d.outdoor_suitability_score) %}
+    {% endif %}
+    {% if d.precipitation_probability_max is defined and d.precipitation_probability_max is not none and
+    d.precipitation_probability_max >= 50 %}
+    {% set _ = rainy_days.append(d) %}
+    {% endif %}
+    {% endfor %}
+    {% set avg_score = (scores|sum / scores|length) if scores|length > 0 else 0 %}
+    {% set rainy_count = rainy_days|length %}
+    {% set best_day = (days|sort(attribute='outdoor_suitability_score')|last) if scores|length > 0 else (days[0] if days
+    else none) %}
+
+    <div class="metric-row">
+      <div class="metric">
+        <div class="metric-label">AVG SCORE</div>
+        <div class="metric-value">{{ "%.1f"|format(avg_score) }}/10</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">RAINY DAYS</div>
+        <div class="metric-value">{{ rainy_count }}/{{ days_count }}</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">BEST DAY</div>
+        <div class="metric-value">{{ best_day.date[5:] if (best_day and best_day.date) else '—' }}</div>
+      </div>
+    </div>
+
+    <!-- Day cards -->
+    {% for day in days %}
+    {% set score = day.outdoor_suitability_score|default(7) %}
+    {% set color = '#4ade80' if score >= 8 else ('#facc15' if score >= 6 else ('#fb923c' if score >= 4 else '#f87171'))
+    %}
+    {% set emoji = '☀️' if score >= 9 else ('⛅' if score >= 7 else ('🌥️' if score >= 5 else ('🌧️' if score >= 3 else
+    '⛈️'))) %}
+    <div class="day-card">
+      <div class="day-card-header">
+        <span class="day-name">{{ emoji }} {{ day.date|default('Day ' ~ loop.index) }}</span>
+        <span class="day-score" data-score-color="{{ color }}">{{ score }}/10</span>
+      </div>
+      <!-- Score bar -->
+      <div class="score-bar" style="--score-color: {{ color }};">
+        {% for i in range(10) %}
+        <div class="score-seg {% if i < score %}filled{% endif %}"></div>
+        {% endfor %}
+      </div>
+      <div class="day-meta">
+        {{ day.weather_summary|default('Moderate weather') }}
+        {% if day.temperature_max_c is defined and day.temperature_max_c is not none %}
+        · ↑{{ day.temperature_max_c|int }}° / ↓{{ (day.temperature_min_c|default(0))|int }}°C
+        {% endif %}
+        {% if day.precipitation_probability_max is defined and day.precipitation_probability_max is not none and
+        day.precipitation_probability_max >= 40 %}
+        <span class="rain-badge">🌧 {{ day.precipitation_probability_max }}%</span>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+
+    <!-- Indoor alternatives -->
+    {% if weather.indoor_alternatives %}
+    <details class="indoor-details">
+      <summary>🌧️ Indoor alternatives for rainy days</summary>
+      {% for date_str, suggestions in weather.indoor_alternatives.items() %}
+      <div class="indoor-date">{{ date_str }}</div>
+      {% for s in suggestions %}
+      <div class="indoor-item">· {{ s }}</div>
+      {% endfor %}
+      {% endfor %}
+    </details>
+    {% endif %}
+
+    <div class="weather-source">Source: Open-Meteo (open-meteo.com)</div>
+
+    {% elif plan.weather_error %}
+    <div class="weather-unavailable">
+      <div>🌤️</div>
+      <div>Weather unavailable: {{ plan.weather_error }}</div>
+    </div>
+    {% else %}
+    <div class="weather-unavailable">
+      <div>🌤️</div>
+      <div>Weather data not fetched (destination or dates missing).</div>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<!-- Plan Budget & Tips (if present) -->
+{% if plan.budget or plan.weatherNote or plan.tips %}
+<div class="plan-footer-cards" style="margin-top:28px;">
+  {% if plan.budget %}
+  <div class="plan-footer-card">
+    <div class="plan-footer-card-label">💰 Budget Breakdown</div>
+    <p class="plan-footer-card-text">{{ plan.budget }}</p>
+  </div>
+  {% endif %}
+  {% if plan.weatherNote %}
+  <div class="plan-footer-card">
+    <div class="plan-footer-card-label">🌤️ Weather Note</div>
+    <p class="plan-footer-card-text">{{ plan.weatherNote }}</p>
+  </div>
+  {% endif %}
+  {% if plan.tips %}
+  <div class="plan-footer-card" style="grid-column:1/-1">
+    <div class="plan-footer-card-label">💡 Pro Tips</div>
+    {% if plan.tips is string %}
+    <p class="plan-footer-card-text">{{ plan.tips }}</p>
+    {% else %}
+    <ul class="plan-tips-list">
+      {% for tip in plan.tips %}<li>{{ tip }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+<!-- Actions -->
+<div class="plan-actions" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:32px;">
+  {% if current_user.is_authenticated %}
+  <button class="btn btn-primary" id="save-server-plan-btn" onclick="saveServerRenderedPlan(this)">
+    💾 Save to My Trips
+  </button>
+  {% else %}
+  <a href="{{ url_for('auth.login', next=request.path) }}" class="btn btn-primary">
+    Sign in to save this trip
+  </a>
+  {% endif %}
+  <a href="/" class="btn btn-secondary">← Plan another trip</a>
+  <a href="/clear" class="btn btn-ghost">✕ Clear plan</a>
+</div>
+
+<!-- Safely encode plan data as application/json -->
+<script id="server-plan-data" type="application/json">
+  {{ plan|tojson }}
+</script>
+
+<!-- Disclaimer -->
+<p class="disclaimer">
+  ⚠️ This is an AI-generated suggestion. Always verify bookings, opening hours, and travel requirements independently.
+</p>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Apply day-score colors from data attributes (avoids Jinja-in-style linter errors)
+  document.querySelectorAll('.day-score[data-score-color]').forEach(function(el) {
+    el.style.color = el.dataset.scoreColor;
+  });
+
+  async function saveServerRenderedPlan(btn) {
+    const original = btn.innerHTML;
+    btn.innerHTML = 'Saving…';
+    btn.disabled = true;
+    try {
+      const rawData = document.getElementById('server-plan-data');
+      const planObj = rawData ? JSON.parse(rawData.textContent) : {};
+      const tripTitle = (planObj.preferences && planObj.preferences.destination) ?
+        (planObj.preferences.destination + ' Journey') :
+        (planObj.summary || 'My Saved Journey');
+      const tripQuery = (planObj.preferences && planObj.preferences.raw_input) ?
+        planObj.preferences.raw_input :
+        (tripTitle + ' itinerary');
+
+      const res = await fetch('/trips/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: tripTitle,
+          query: tripQuery,
+          plan: planObj
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        btn.innerHTML = '✓ Saved to My Trips!';
+        btn.style.background = 'var(--success)';
+        btn.style.color = '#000';
+        setTimeout(() => {
+          window.location.href = data.url || '{{ url_for("trips.list_trips") }}';
+        }, 1000);
+      } else {
+        alert(data.error || 'Failed to save trip');
+        btn.innerHTML = original;
+        btn.disabled = false;
+      }
+    } catch (e) {
+      alert('Error connecting to server.');
+      btn.innerHTML = original;
+      btn.disabled = false;
+    }
+  }
+</script>
+{% endblock %}

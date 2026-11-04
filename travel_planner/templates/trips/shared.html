@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ trip.title }} (Shared) — Travel Planner AI{% endblock %}
+{% block content %}
+<div style="max-width:860px;margin:0 auto;padding:36px 0 60px;">
+  <div style="margin-bottom:16px;">
+    <span style="font-size:11px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.2);
+      color:#6ee7b7;border-radius:100px;padding:3px 12px;letter-spacing:.06em;">
+      READ-ONLY SHARED PLAN
+    </span>
+  </div>
+
+  <div class="plan-header">
+    <div class="plan-header-label">SHARED TRAVEL PLAN</div>
+    <p class="plan-summary">{{ plan.summary }}</p>
+  </div>
+
+  <div class="plan-days-label">DAY-BY-DAY ITINERARY</div>
+  <div class="plan-days">
+    {% for d in plan.days %}
+    <div class="plan-day-card open">
+      <div class="plan-day-head" onclick="this.closest('.plan-day-card').classList.toggle('open')">
+        <span class="plan-day-name">{{ d.day }}</span>
+        <div style="display:flex;gap:8px;align-items:center;">
+          {% if d.cost %}<span class="plan-day-cost">{{ d.cost }}</span>{% endif %}
+          <span class="plan-day-chevron">▼</span>
+        </div>
+      </div>
+      <div class="plan-day-body">
+        {% if d.morning   %}<div class="plan-time-slot"><span class="plan-slot-label">Morning</span><span class="plan-slot-text">{{ d.morning }}</span></div>{% endif %}
+        {% if d.afternoon %}<div class="plan-time-slot"><span class="plan-slot-label">Afternoon</span><span class="plan-slot-text">{{ d.afternoon }}</span></div>{% endif %}
+        {% if d.evening   %}<div class="plan-time-slot"><span class="plan-slot-label">Evening</span><span class="plan-slot-text">{{ d.evening }}</span></div>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="plan-footer-cards">
+    <div class="plan-footer-card">
+      <div class="plan-footer-card-label">💰 Budget</div>
+      <p class="plan-footer-card-text">{{ plan.budget }}</p>
+    </div>
+    <div class="plan-footer-card">
+      <div class="plan-footer-card-label">🌤️ Weather</div>
+      <p class="plan-footer-card-text">{{ plan.weatherNote }}</p>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:40px;">
+    <a href="{{ url_for('main.index') }}" class="btn btn-primary">Plan my own trip ✈️</a>
+  </div>
+</div>
+{% endblock %}

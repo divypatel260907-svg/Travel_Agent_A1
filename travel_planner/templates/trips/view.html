@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}{{ trip.title }} — Travel Planner AI{% endblock %}
+{% block content %}
+<div style="max-width:860px;margin:0 auto;padding:36px 0 60px;">
+
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px;">
+    <a href="{{ url_for('trips.list_trips') }}" class="btn btn-ghost" style="padding:6px 12px;font-size:13px;">← My Trips</a>
+    <div style="flex:1;"></div>
+    <button class="btn btn-ghost" style="font-size:13px;" data-trip-id="{{ trip.id }}" onclick="shareTrip(parseInt(this.dataset.tripId),this)">🔗 Share</button>
+  </div>
+
+  <div class="plan-header">
+    <div class="plan-header-label">SAVED PLAN · {{ trip.created_at.strftime('%B %d, %Y') }}</div>
+    <p class="plan-summary">{{ plan.summary }}</p>
+  </div>
+
+  <div class="plan-days-label">DAY-BY-DAY ITINERARY</div>
+  <div class="plan-days">
+    {% for d in plan.days %}
+    <div class="plan-day-card open">
+      <div class="plan-day-head" onclick="this.closest('.plan-day-card').classList.toggle('open')">
+        <span class="plan-day-name">{{ d.day }}</span>
+        <div style="display:flex;gap:8px;align-items:center;">
+          {% if d.cost %}<span class="plan-day-cost">{{ d.cost }}</span>{% endif %}
+          <span class="plan-day-chevron">▼</span>
+        </div>
+      </div>
+      <div class="plan-day-body">
+        {% if d.morning   %}<div class="plan-time-slot"><span class="plan-slot-label">Morning</span><span class="plan-slot-text">{{ d.morning }}</span></div>{% endif %}
+        {% if d.afternoon %}<div class="plan-time-slot"><span class="plan-slot-label">Afternoon</span><span class="plan-slot-text">{{ d.afternoon }}</span></div>{% endif %}
+        {% if d.evening   %}<div class="plan-time-slot"><span class="plan-slot-label">Evening</span><span class="plan-slot-text">{{ d.evening }}</span></div>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="plan-footer-cards">
+    <div class="plan-footer-card">
+      <div class="plan-footer-card-label">💰 Budget</div>
+      <p class="plan-footer-card-text">{{ plan.budget }}</p>
+    </div>
+    <div class="plan-footer-card">
+      <div class="plan-footer-card-label">🌤️ Weather</div>
+      <p class="plan-footer-card-text">{{ plan.weatherNote }}</p>
+    </div>
+    {% if plan.tips %}
+    <div class="plan-footer-card" style="grid-column:1/-1">
+      <div class="plan-footer-card-label">💡 Tips</div>
+      <ul class="plan-tips-list">
+        {% for tip in plan.tips %}<li>{{ tip }}</li>{% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div id="share-toast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:#1a1f3a;border:1px solid rgba(79,110,247,0.3);border-radius:12px;
+  padding:12px 20px;font-size:13px;color:var(--text-1);transition:transform .3s ease;z-index:300;display:none;">
+  🔗 Link copied!
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function copyTextToClipboard(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    return navigator.clipboard.writeText(text);
+  }
+  const textArea = document.createElement("textarea");
+  textArea.value = text;
+  textArea.style.position = "fixed";
+  textArea.style.left = "-9999px";
+  textArea.style.top = "-9999px";
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+  return new Promise((resolve, reject) => {
+    try {
+      const successful = document.execCommand('copy');
+      textArea.remove();
+      successful ? resolve() : reject(new Error('copy command failed'));
+    } catch (err) {
+      textArea.remove();
+      reject(err);
+    }
+  });
+}
+
+async function shareTrip(id, btn) {
+  if (!btn) return;
+  const originalText = btn.textContent;
+  btn.textContent = '…';
+  btn.disabled = true;
+
+  try {
+    const r = await fetch(`/trips/${id}/share`, { method:'POST', headers:{'Content-Type':'application/json'} });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    if (j && j.url) {
+      try {
+        await copyTextToClipboard(j.url);
+      } catch (_) {
+        prompt('Copy this trip share link:', j.url);
+      }
+      const t = document.getElementById('share-toast');
+      if (t) {
+        t.style.display = 'block';
+        t.style.transform = 'translateX(-50%) translateY(0)';
+        setTimeout(() => {
+          t.style.transform = 'translateX(-50%) translateY(80px)';
+          setTimeout(() => { t.style.display = 'none'; }, 400);
+        }, 2500);
+      }
+      btn.textContent = '✓ Copied';
+      setTimeout(() => {
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }, 1800);
+      return;
+    }
+  } catch (err) {
+    alert('Could not generate share link: ' + (err.message || 'Error'));
+  }
+  btn.textContent = originalText;
+  btn.disabled = false;
+}
+</script>
+{% endblock %}

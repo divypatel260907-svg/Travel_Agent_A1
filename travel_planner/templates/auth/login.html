@@ -1,0 +1,74 @@
+{% extends "auth/base_auth.html" %}
+{% block title %}Login — VOYA Travel Planner AI{% endblock %}
+
+{% block auth_content %}
+<h1 class="auth-card-headline">Welcome <em>Back</em></h1>
+<p class="auth-card-subtitle">Sign in to access your saved journeys and recommendations.</p>
+
+<form class="auth-form" method="POST" action="{{ url_for('auth.login') }}">
+  <!-- Email Field -->
+  <div class="auth-field">
+    <label class="auth-label" for="email">Email</label>
+    <div class="auth-input-wrap">
+      <span class="auth-input-icon">✉</span>
+      <input
+        class="auth-input"
+        id="email"
+        name="email"
+        type="email"
+        autocomplete="email"
+        required
+        autofocus
+        placeholder="you@example.com"
+        value="{{ email or '' }}"
+      />
+    </div>
+  </div>
+
+  <!-- Password Field -->
+  <div class="auth-field">
+    <label class="auth-label" for="password">Password</label>
+    <div class="auth-input-wrap">
+      <span class="auth-input-icon">🔒</span>
+      <input
+        class="auth-input"
+        id="password"
+        name="password"
+        type="password"
+        autocomplete="current-password"
+        required
+        placeholder="••••••••"
+      />
+      <button
+        type="button"
+        class="auth-pwd-toggle"
+        onclick="togglePasswordVisibility('password', this)"
+        aria-label="Toggle password visibility"
+      >
+        👁️
+      </button>
+    </div>
+  </div>
+
+  <!-- Remember Me & Forgot Password Row -->
+  <div class="auth-options-row">
+    <label class="auth-check-label">
+      <input type="checkbox" name="remember" value="1" />
+      <span>Remember me</span>
+    </label>
+    <a href="{{ url_for('auth.forgot_password') }}" class="auth-forgot-link">Forgot password?</a>
+  </div>
+
+  <!-- Login Button -->
+  <button class="auth-btn-primary" type="submit">
+    <span>Login</span>
+    <span>→</span>
+  </button>
+</form>
+
+<!-- Register Link -->
+<div class="auth-footer">
+  Don’t have an account?
+  <a href="{{ url_for('auth.register') }}" class="auth-footer-link">Register</a>
+</div>
+{% endblock %}

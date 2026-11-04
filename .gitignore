@@ -1,0 +1,46 @@
+# -- Secrets – never commit real keys ------------------------------------------
+.env
+.env.local
+.env.*.local
+
+# .env.example is intentionally NOT listed here (it must be committed)
+
+# -- Python --------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+pip-wheel-metadata/
+
+# -- Testing -------------------------------------------------------------------
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# -- Editors / OS --------------------------------------------------------------
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# -- Exports (generated at runtime) --------------------------------------------
+travel_planner/exports/*.pdf
+travel_planner/exports/*.ics
+travel_planner/exports/*.md
+
+# -- Databases / SQLite --
+*.db
+*.sqlite3
+instance/
