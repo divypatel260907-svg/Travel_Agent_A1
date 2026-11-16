@@ -1,4 +1,5 @@
-"""Vercel / Root entrypoint for Flask app."""
+"""Vercel / Production entrypoint for Flask app."""
+import os
 import sys
 from pathlib import Path
 
@@ -12,8 +13,11 @@ for p in (_ROOT, _PKG):
 
 from app import create_app
 
-app = create_app("production")
+env = os.getenv("FLASK_ENV", "production")
+app = create_app(env)
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    port = int(os.getenv("PORT", 5000))
+    debug = os.getenv("FLASK_DEBUG", "0").lower() in ("1", "true")
+    app.run(debug=debug, host="0.0.0.0", port=port)
 

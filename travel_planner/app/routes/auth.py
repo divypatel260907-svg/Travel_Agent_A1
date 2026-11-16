@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from urllib.parse import urlsplit
 
 from flask import (Blueprint, flash, redirect, render_template,
                    request, url_for)
@@ -11,6 +12,16 @@ from app.extensions import db
 from models.database import User
 
 auth_bp = Blueprint("auth", __name__)
+
+
+def _is_safe_url(target: str | None) -> bool:
+    if not target or target.startswith("//") or target.startswith("\\"):
+        return False
+    ref_url = urlsplit(request.host_url)
+    test_url = urlsplit(target)
+    return test_url.scheme in ("", "http", "https") and (
+        not test_url.netloc or test_url.netloc == ref_url.netloc
+    )
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
@@ -33,7 +44,9 @@ def login():
         login_user(user, remember=remember)
 
         next_page = request.args.get("next")
-        return redirect(next_page or url_for("main.index"))
+        if next_page and _is_safe_url(next_page):
+            return redirect(next_page)
+        return redirect(url_for("main.index"))
 
     return render_template("auth/login.html")
 

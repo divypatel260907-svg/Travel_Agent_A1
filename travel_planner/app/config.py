@@ -29,9 +29,24 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS: bool = False
     SQLALCHEMY_ENGINE_OPTIONS: dict = {"pool_pre_ping": True}
 
-    # ── Flask-Login ───────────────────────────────────────────────────────────
+    # ── Flask-Login & Session Security ───────────────────────────────────────
     LOGIN_VIEW: str = "auth.login"          # redirect target for @login_required
     REMEMBER_COOKIE_DURATION_DAYS: int = 30
+    SESSION_COOKIE_HTTPONLY: bool = True
+    SESSION_COOKIE_SAMESITE: str = "Lax"
+    SESSION_COOKIE_SECURE: bool = False     # overridden in ProductionConfig
+    REMEMBER_COOKIE_HTTPONLY: bool = True
+    REMEMBER_COOKIE_SAMESITE: str = "Lax"
+    REMEMBER_COOKIE_SECURE: bool = False    # overridden in ProductionConfig
+
+    # ── CORS & Security ──────────────────────────────────────────────────────
+    ALLOWED_ORIGINS: list[str] = [
+        o.strip() for o in os.getenv("ALLOWED_ORIGINS", "").split(",") if o.strip()
+    ]
+
+    # ── Rate Limiting ────────────────────────────────────────────────────────
+    RATELIMIT_DEFAULT: str = os.getenv("RATELIMIT_DEFAULT", "200 per day; 50 per hour")
+    RATELIMIT_STORAGE_URI: str = os.getenv("RATELIMIT_STORAGE_URI", "memory://")
 
     # ── LLM ──────────────────────────────────────────────────────────────────
     GROQ_API_KEY: str | None = os.getenv("GROQ_API_KEY")
@@ -47,3 +62,9 @@ class Config:
 
 class DevelopmentConfig(Config):
     DEBUG = True
+
+
+class ProductionConfig(Config):
+    DEBUG = False
+    SESSION_COOKIE_SECURE = True
+    REMEMBER_COOKIE_SECURE = True

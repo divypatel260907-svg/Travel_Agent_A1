@@ -1,11 +1,13 @@
 """Flask application factory."""
 from __future__ import annotations
 
+import os
 import sys
 from datetime import timedelta
 from pathlib import Path
 
-from flask import Flask
+from flask import Flask, flash, redirect, request, url_for
+from flask_cors import CORS
 from dotenv import load_dotenv
 
 # Make the travel_planner package importable from any working directory
@@ -30,19 +32,40 @@ def create_app(config_name: str = "development") -> Flask:
     )
 
     # ── Config ────────────────────────────────────────────────────────────────
-    from app.config import Config, DevelopmentConfig  # noqa: PLC0415
-    cfg = DevelopmentConfig if config_name == "development" else Config
+    from app.config import Config, DevelopmentConfig, ProductionConfig  # noqa: PLC0415
+    if config_name == "production" or os.getenv("FLASK_ENV") == "production":
+        cfg = ProductionConfig
+    elif config_name == "development":
+        cfg = DevelopmentConfig
+    else:
+        cfg = Config
     app.config.from_object(cfg)
 
+    # ── CORS ──────────────────────────────────────────────────────────────────
+    allowed_origins = app.config.get("ALLOWED_ORIGINS", [])
+    if allowed_origins:
+        CORS(app, origins=allowed_origins, supports_credentials=True)
+    else:
+        # Default: restrict to same origin
+        CORS(app, origins=[], supports_credentials=True)
+
     # ── Extensions ────────────────────────────────────────────────────────────
-    from app.extensions import bcrypt, db, login_manager  # noqa: PLC0415
+    from app.extensions import bcrypt, db, limiter, login_manager  # noqa: PLC0415
     db.init_app(app)
     bcrypt.init_app(app)
+    limiter.init_app(app)
 
     login_manager.init_app(app)
     login_manager.login_view     = "auth.login"          # type: ignore[assignment]
     login_manager.login_message  = "Please log in to access that page."
     login_manager.login_message_category = "warning"
+
+    @login_manager.unauthorized_handler
+    def unauthorized():
+        if request.path.startswith("/api/") or request.is_json:
+            return {"error": "Authentication required. Please sign in to access this endpoint."}, 401
+        flash("Please log in to access that page.", "warning")
+        return redirect(url_for("auth.login", next=request.full_path if request.method == "GET" else None))
 
     # Remember-me duration
     app.config["REMEMBER_COOKIE_DURATION"] = timedelta(
@@ -68,6 +91,37 @@ def create_app(config_name: str = "development") -> Flask:
     app.register_blueprint(auth_bp,  url_prefix="/auth")
     app.register_blueprint(trips_bp, url_prefix="/trips")
     app.register_blueprint(admin_bp, url_prefix="/admin")
+
+    # ── Security Headers ──────────────────────────────────────────────────────
+    @app.after_request
+    def set_security_headers(response):
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "SAMEORIGIN"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        if not app.debug:
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+
+        # Content-Security-Policy: allow self, Google Fonts, Leaflet CDN, OSM tiles
+        csp = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' https://unpkg.com; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; "
+            "font-src 'self' https://fonts.gstatic.com data:; "
+            "img-src 'self' data: https://*.tile.openstreetmap.org https://unpkg.com; "
+            "connect-src 'self'; "
+            "frame-ancestors 'none';"
+        )
+        response.headers["Content-Security-Policy"] = csp
+        return response
+
+    # ── Rate Limit Error Handler ──────────────────────────────────────────────
+    @app.errorhandler(429)
+    def ratelimit_handler(e):
+        if request.path.startswith("/api/"):
+            return {"error": "Rate limit exceeded. Please wait a moment before trying again."}, 429
+        flash("You are making requests too quickly. Please slow down.", "warning")
+        return redirect(url_for("main.index"))
 
     # ── DB init (create tables if missing) ───────────────────────────────────
     with app.app_context():

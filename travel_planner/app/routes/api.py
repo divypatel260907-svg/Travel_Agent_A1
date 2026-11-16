@@ -13,12 +13,18 @@ import json
 import os
 import re
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, current_app
+from flask_login import current_user, login_required
 from dotenv import load_dotenv
+
+from app.extensions import limiter
 
 load_dotenv()
 
 api_bp = Blueprint("api", __name__)
+
+# ── Security constants ────────────────────────────────────────────────────────
+MAX_QUERY_LENGTH = 2000  # characters — prevents token abuse on the LLM
 
 # ── model names (overridable via .env) ────────────────────────────────────────
 _GROQ_MODEL   = os.getenv("GROQ_MODEL",   "openai/gpt-oss-120b")
@@ -169,11 +175,14 @@ def _parse_json(raw: str) -> dict:
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 @api_bp.route("/plan", methods=["POST"])
+@login_required
+@limiter.limit("10 per minute")
 def create_plan():
     """
     POST /api/plan
     Body: { "query": "...", "profile": { ... } }
     Returns: { "plan": { summary, days, budget, weatherNote, tips } }
+    Requires authentication. Rate-limited (see app factory).
     """
     data    = request.get_json(silent=True) or {}
     query   = (data.get("query") or "").strip()
@@ -181,6 +190,9 @@ def create_plan():
 
     if not query:
         return jsonify({"error": "Field 'query' is required and must not be empty."}), 400
+
+    if len(query) > MAX_QUERY_LENGTH:
+        return jsonify({"error": f"Trip description is too long ({len(query)} chars). Maximum is {MAX_QUERY_LENGTH}."}), 400
 
     # Guard: require keys up front with a clear message
     if not os.getenv("GROQ_API_KEY"):
@@ -206,7 +218,10 @@ def create_plan():
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 500
     except Exception as exc:
-        return jsonify({"error": f"Unexpected error: {type(exc).__name__}: {str(exc)[:200]}"}), 500
+        # In production, don't leak internal details
+        if current_app.debug:
+            return jsonify({"error": f"Unexpected error: {type(exc).__name__}: {str(exc)[:200]}"}), 500
+        return jsonify({"error": "An unexpected error occurred. Please try again."}), 500
 
 
 @api_bp.route("/health", methods=["GET"])
