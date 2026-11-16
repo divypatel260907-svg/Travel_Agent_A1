@@ -265,6 +265,7 @@
 
 </div><!-- /ch-root -->
 
+{% if current_user.is_authenticated %}
 <!-- ── Hero badge + CTA row (below the fold, first visible section) ── -->
 <section class="hero-below animate-in" id="hero-below">
   <div class="hero-below-inner">
@@ -316,6 +317,7 @@
 
 <!-- ── Plan result area ───────────────────────────────────────────────────── -->
 <section id="plan-result" class="hidden"></section>
+{% endif %}
 
 {% endblock %}
 

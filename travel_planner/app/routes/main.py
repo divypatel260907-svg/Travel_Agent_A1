@@ -44,6 +44,11 @@ def register_redirect():
 @main_bp.route("/plan")
 def show_plan():
     """Rendered plan page."""
+    from flask_login import current_user
+    if not current_user.is_authenticated:
+        flash("Please log in or register to access the planner.", "warning")
+        return redirect(url_for("auth.login"))
+
     raw = session.get("last_plan")
     if not raw:
         flash("No plan found — please create one first.", "warning")
