@@ -125,8 +125,15 @@ def create_app(config_name: str = "development") -> Flask:
 
     # ── DB init (create tables if missing) ───────────────────────────────────
     with app.app_context():
+        # Ensure instance directory exists if using SQLite relative path
+        uri = app.config.get("SQLALCHEMY_DATABASE_URI", "")
+        if uri.startswith("sqlite:////tmp/"):
+            Path("/tmp").mkdir(parents=True, exist_ok=True)
         from models import database  # noqa: F401, PLC0415 — registers models
-        db.create_all()
+        try:
+            db.create_all()
+        except Exception as exc:
+            app.logger.warning(f"Database auto-creation error: {exc}")
 
     # ── CLI: flask init-db (hard reset) ──────────────────────────────────────
     @app.cli.command("init-db")

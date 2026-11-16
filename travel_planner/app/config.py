@@ -16,11 +16,17 @@ class Config:
 
     # ── Database ──────────────────────────────────────────────────────────────
     # SQLite by default; swap DATABASE_URL for PostgreSQL in production
-    # On serverless (e.g. Vercel), use /tmp for write access if SQLite is used
+    # On Render, Vercel, or cloud containers, use /tmp for guaranteed write access
+    _instance_dir = _BASE_DIR / "instance"
+    try:
+        _instance_dir.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
+
     _default_db = (
         "/tmp/travel.db"
-        if os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME")
-        else str(_BASE_DIR / "instance" / "travel.db")
+        if os.getenv("RENDER") or os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME")
+        else str(_instance_dir / "travel.db")
     )
     SQLALCHEMY_DATABASE_URI: str = os.getenv(
         "DATABASE_URL",
