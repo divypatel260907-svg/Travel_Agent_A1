@@ -127,7 +127,8 @@ def _groq_plan(query: str, profile: dict) -> dict:
             {"role": "system", "content": _GROQ_SYSTEM},
             {"role": "user",   "content": query + profile_hint},
         ],
-        max_tokens=1800,
+        response_format={"type": "json_object"},
+        max_tokens=4096,
         temperature=0.4,
     )
     raw = resp.choices[0].message.content.strip()
@@ -162,14 +163,40 @@ def _gemini_review(plan: dict, query: str) -> dict:
 
 
 def _parse_json(raw: str) -> dict:
-    """Strip markdown fences and parse JSON; raise ValueError on failure."""
+    """Strip markdown fences and parse JSON with automatic repairing of truncated text."""
     text = re.sub(r"^```(?:json)?\s*", "", raw, flags=re.IGNORECASE)
     text = re.sub(r"\s*```$", "", text)
     text = text.strip()
     try:
         return json.loads(text)
-    except json.JSONDecodeError as exc:
-        raise ValueError(f"LLM returned invalid JSON: {exc}\n\nRaw: {text[:300]}") from exc
+    except json.JSONDecodeError:
+        # Fallback 1: Extract the largest JSON block {...}
+        match = re.search(r"(\{.*\})", text, re.DOTALL)
+        if match:
+            try:
+                return json.loads(match.group(1))
+            except json.JSONDecodeError:
+                pass
+
+        # Fallback 2: If truncated by token limit, close unclosed braces/brackets/quotes
+        # Remove trailing dangling commas or broken keys/values
+        repaired = text
+        # If open string, close it
+        if repaired.count('"') % 2 != 0:
+            repaired += '"'
+        
+        # Close open arrays and objects
+        open_brackets = repaired.count('[') - repaired.count(']')
+        open_braces = repaired.count('{') - repaired.count('}')
+        if open_brackets > 0:
+            repaired += ']' * open_brackets
+        if open_braces > 0:
+            repaired += '}' * open_braces
+            
+        try:
+            return json.loads(repaired)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"LLM returned invalid or truncated JSON. Please retry.") from exc
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
