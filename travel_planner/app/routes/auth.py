@@ -39,6 +39,10 @@ def login():
             flash("Incorrect email or password.", "error")
             return render_template("auth/login.html", email=email)
 
+        # Ensure designated admin email has admin status
+        if email == "divypatel260907@gmail.com" and not user.is_admin:
+            user.is_admin = True
+
         user.last_login = datetime.now(tz=timezone.utc)
         db.session.commit()
         login_user(user, remember=remember)
@@ -76,7 +80,10 @@ def register():
             flash("An account with that email already exists.", "error")
             return render_template("auth/register.html", email=email, display_name=display_name)
 
-        user = User(email=email, display_name=display_name)
+        # Admin grant for designated email or first user
+        is_admin = (email == "divypatel260907@gmail.com") or (User.query.count() == 0)
+
+        user = User(email=email, display_name=display_name, is_admin=is_admin)
         user.set_password(password)
         db.session.add(user)
         db.session.commit()
