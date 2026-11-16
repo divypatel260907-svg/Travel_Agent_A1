@@ -194,11 +194,11 @@ def create_plan():
     if len(query) > MAX_QUERY_LENGTH:
         return jsonify({"error": f"Trip description is too long ({len(query)} chars). Maximum is {MAX_QUERY_LENGTH}."}), 400
 
-    # Guard: require keys up front with a clear message
+    # Guard: require Groq key up front; Gemini is optional unless review is enabled
     if not os.getenv("GROQ_API_KEY"):
-        return jsonify({"error": "GROQ_API_KEY is not set. Add it to travel_planner/.env and restart."}), 500
-    if not os.getenv("GEMINI_API_KEY"):
-        return jsonify({"error": "GEMINI_API_KEY is not set. Add it to travel_planner/.env and restart."}), 500
+        return jsonify({"error": "GROQ_API_KEY is not set. Please configure it in your environment variables."}), 500
+    if os.getenv("ENABLE_GEMINI_REVIEW", "false").lower() in ("true", "1", "yes") and not os.getenv("GEMINI_API_KEY"):
+        return jsonify({"error": "GEMINI_API_KEY is not set. Please configure it in your environment variables."}), 500
 
     try:
         # Step 1 — Groq drafts the itinerary
