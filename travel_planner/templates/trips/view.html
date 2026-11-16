@@ -6,6 +6,9 @@
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px;">
     <a href="{{ url_for('trips.list_trips') }}" class="btn btn-ghost" style="padding:6px 12px;font-size:13px;">← My Trips</a>
     <div style="flex:1;"></div>
+    <a href="{{ url_for('trips.export_trip', trip_id=trip.id, format='ics') }}" class="btn btn-ghost" style="font-size:13px;">📅 Add to Calendar (.ics)</a>
+    <a href="{{ url_for('trips.export_trip', trip_id=trip.id, format='markdown') }}" class="btn btn-ghost" style="font-size:13px;">📥 Export Markdown</a>
+    <button class="btn btn-ghost" style="font-size:13px;" onclick="window.print()">🖨️ Print / PDF</button>
     <button class="btn btn-ghost" style="font-size:13px;" data-trip-id="{{ trip.id }}" onclick="shareTrip(parseInt(this.dataset.tripId),this)">🔗 Share</button>
   </div>
 

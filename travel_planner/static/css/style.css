@@ -1100,3 +1100,67 @@ body.plan-nav-active .main {
 /* Utility classes for conditional text colors (avoids Jinja-in-style linter errors) */
 .text-success { color: var(--success); }
 .text-muted   { color: var(--text-3); }
+
+/* ── Interactive Map & Refinements ── */
+.plan-map-container {
+  margin: 20px 0 28px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 16px;
+}
+.plan-map-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+  margin-bottom: 12px;
+}
+.replan-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 16px 0 24px;
+  padding: 12px 18px;
+  background: rgba(79,110,247,0.06);
+  border: 1px solid rgba(79,110,247,0.18);
+  border-radius: 999px;
+}
+.replan-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-1);
+}
+.replan-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-1);
+  font-size: 12px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.replan-btn:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+.plan-checklist {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+}
+.plan-checklist label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}

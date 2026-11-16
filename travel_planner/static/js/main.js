@@ -228,6 +228,8 @@ function renderError(msg) {
   result.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+let mapInstance = null;
+
 function renderPlan(plan) {
   const result = document.getElementById('plan-result');
   if (!result) return;
@@ -235,7 +237,7 @@ function renderPlan(plan) {
   const days = (plan.days || []).map((d, i) => `
     <div class="plan-day-card" id="day-card-${i}">
       <div class="plan-day-head" onclick="toggleDay(${i})">
-        <span class="plan-day-name">${escHtml(d.day || 'Day ' + (i+1))}</span>
+        <span class="plan-day-name">${escHtml(d.day || 'Day ' + (i+1))} ${d.location_name ? `<span style="font-size:12px;opacity:0.75;font-weight:normal;">• ${escHtml(d.location_name)}</span>` : ''}</span>
         <div style="display:flex;gap:8px;align-items:center">
           ${d.cost ? `<span class="plan-day-cost">${escHtml(d.cost)}</span>` : ''}
           <span class="plan-day-chevron">▼</span>
@@ -248,6 +250,32 @@ function renderPlan(plan) {
       </div>
     </div>`).join('');
 
+  // Budget Breakdown formatting (handles object or string)
+  let budgetHtml = '';
+  if (typeof plan.budget === 'object' && plan.budget !== null) {
+    budgetHtml = `
+      <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;">
+        <div style="font-size:16px;font-weight:700;color:var(--text-1);margin-bottom:4px;">Total: ${escHtml(plan.budget.total || '—')}</div>
+        ${plan.budget.accommodation ? `<div>🏨 Accommodation: <strong>${escHtml(plan.budget.accommodation)}</strong></div>` : ''}
+        ${plan.budget.food ? `<div>🍽️ Food & Dining: <strong>${escHtml(plan.budget.food)}</strong></div>` : ''}
+        ${plan.budget.activities ? `<div>🎟️ Activities & Sights: <strong>${escHtml(plan.budget.activities)}</strong></div>` : ''}
+        ${plan.budget.transport ? `<div>🚆 Transit & Transport: <strong>${escHtml(plan.budget.transport)}</strong></div>` : ''}
+      </div>
+    `;
+  } else {
+    budgetHtml = `<p class="plan-footer-card-text">${escHtml(plan.budget || '—')}</p>`;
+  }
+
+  // Packing list
+  const packingHtml = Array.isArray(plan.packingList) && plan.packingList.length
+    ? `<ul class="plan-checklist">${plan.packingList.map(item => `<li><label><input type="checkbox"> <span>${escHtml(item)}</span></label></li>`).join('')}</ul>`
+    : `<p class="plan-footer-card-text">Essentials: comfortable shoes, adapter, climate wear.</p>`;
+
+  // Cultural etiquette guide
+  const culturalHtml = Array.isArray(plan.culturalTips) && plan.culturalTips.length
+    ? `<ul class="plan-tips-list">${plan.culturalTips.map(t => `<li>${escHtml(t)}</li>`).join('')}</ul>`
+    : `<p class="plan-footer-card-text">Be respectful of local traditions and customs.</p>`;
+
   const tipsHtml = Array.isArray(plan.tips) && plan.tips.length
     ? `<ul class="plan-tips-list">${plan.tips.map(t => `<li>${escHtml(t)}</li>`).join('')}</ul>`
     : `<p class="plan-footer-card-text">${escHtml(plan.tips || '—')}</p>`;
@@ -258,31 +286,58 @@ function renderPlan(plan) {
       <div class="plan-header-label">YOUR AI TRAVEL PLAN</div>
       <p class="plan-summary">${escHtml(plan.summary || '')}</p>
       <div class="plan-meta-row">
-        ${plan.budget      ? `<span class="plan-meta-pill">💰 <strong>Budget</strong></span>` : ''}
-        ${plan.weatherNote ? `<span class="plan-meta-pill">🌤️ <strong>Weather note</strong></span>` : ''}
         ${(plan.days||[]).length ? `<span class="plan-meta-pill">📅 <strong>${plan.days.length} days</strong></span>` : ''}
+        ${plan.weatherNote ? `<span class="plan-meta-pill">🌤️ <strong>Weather note</strong></span>` : ''}
+        <span class="plan-meta-pill">⚡ <strong>Optimized by Multi-Agent AI</strong></span>
       </div>
+    </div>
+
+    <!-- Quick Re-Plan / Refine Bar -->
+    <div class="replan-bar">
+      <span class="replan-label">✨ Quick Re-plan:</span>
+      <button class="replan-btn" onclick="quickReplan('Make it 25% cheaper with free/budget spots')">💸 Cheaper</button>
+      <button class="replan-btn" onclick="quickReplan('Focus heavily on food experiences and street dining')">🍜 Foodie Focus</button>
+      <button class="replan-btn" onclick="quickReplan('Less heavy walking, slow relaxed pace with scenic views')">🌿 Relaxed & Low-Walking</button>
+      <button class="replan-btn" onclick="quickReplan('Rainy day indoor backup activities for all days')">🌧️ Rainy Contingency</button>
+    </div>
+
+    <!-- Interactive Map -->
+    <div class="plan-map-container">
+      <div class="plan-map-header">
+        <span>🗺️ Interactive Route & Landmarks Map</span>
+        <span style="font-size:12px;color:var(--text-3);">OpenStreetMap</span>
+      </div>
+      <div id="itinerary-map" style="height:320px;border-radius:12px;background:#111422;z-index:1;"></div>
     </div>
 
     <div class="plan-days-label">DAY-BY-DAY ITINERARY</div>
     <div class="plan-days">${days}</div>
 
+    <!-- Cards Grid -->
     <div class="plan-footer-cards">
       <div class="plan-footer-card">
         <div class="plan-footer-card-label">💰 Budget Breakdown</div>
-        <p class="plan-footer-card-text">${escHtml(plan.budget || '—')}</p>
+        ${budgetHtml}
       </div>
       <div class="plan-footer-card">
-        <div class="plan-footer-card-label">🌤️ Weather Note</div>
+        <div class="plan-footer-card-label">🌤️ Weather & Clothing</div>
         <p class="plan-footer-card-text">${escHtml(plan.weatherNote || '—')}</p>
       </div>
+      <div class="plan-footer-card">
+        <div class="plan-footer-card-label">🎒 Packing Checklist</div>
+        ${packingHtml}
+      </div>
+      <div class="plan-footer-card">
+        <div class="plan-footer-card-label">⛩️ Cultural & Etiquette Mini-Guide</div>
+        ${culturalHtml}
+      </div>
       <div class="plan-footer-card" style="grid-column:1/-1">
-        <div class="plan-footer-card-label">💡 Pro Tips</div>
+        <div class="plan-footer-card-label">💡 Insider Tips</div>
         ${tipsHtml}
       </div>
     </div>
 
-    <!-- Action Row: Save to DB & Share -->
+    <!-- Action Row: Save, Share, Export -->
     <div style="margin-top:28px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
       <button class="btn btn-primary" id="save-plan-btn" onclick="saveCurrentPlan(this)" style="padding:10px 22px;">
         💾 Save to My Trips
@@ -290,13 +345,95 @@ function renderPlan(plan) {
       <button class="btn btn-ghost" id="share-plan-btn" onclick="shareCurrentPlan(this)" style="padding:10px 18px;">
         🔗 Share Plan
       </button>
+      <button class="btn btn-ghost" onclick="downloadClientMarkdown()" style="padding:10px 18px;">
+        📥 Download Markdown (.md)
+      </button>
+      <button class="btn btn-ghost" onclick="window.print()" style="padding:10px 18px;">
+        🖨️ Print / Save as PDF
+      </button>
     </div>`;
 
   // Auto-open Day 1
   const first = document.getElementById('day-card-0');
   if (first) first.classList.add('open');
 
+  // Initialize interactive Leaflet Map
+  initItineraryMap(plan);
+
   result.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function initItineraryMap(plan) {
+  setTimeout(() => {
+    const mapEl = document.getElementById('itinerary-map');
+    if (!mapEl || typeof L === 'undefined') return;
+
+    if (mapInstance) {
+      mapInstance.remove();
+      mapInstance = null;
+    }
+
+    let defaultCoords = [35.6762, 139.6503]; // Tokyo fallback
+    if (Array.isArray(plan.coordinates) && plan.coordinates.length === 2) {
+      defaultCoords = plan.coordinates;
+    } else if (plan.days && plan.days[0] && plan.days[0].lat && plan.days[0].lng) {
+      defaultCoords = [plan.days[0].lat, plan.days[0].lng];
+    }
+
+    mapInstance = L.map('itinerary-map').setView(defaultCoords, 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(mapInstance);
+
+    const bounds = [];
+    (plan.days || []).forEach((d, idx) => {
+      if (d.lat && d.lng) {
+        bounds.push([d.lat, d.lng]);
+        L.marker([d.lat, d.lng])
+          .addTo(mapInstance)
+          .bindPopup(`<strong>${escHtml(d.day || 'Day ' + (idx + 1))}</strong><br>${escHtml(d.location_name || d.morning || '')}`);
+      }
+    });
+
+    if (bounds.length > 1) {
+      mapInstance.fitBounds(bounds, { padding: [30, 30] });
+    }
+  }, 200);
+}
+
+function quickReplan(modifier) {
+  const ta = document.getElementById('query');
+  if (!ta) return;
+  const current = currentQueryText || ta.value || 'Trip';
+  ta.value = `${current} [Refinement: ${modifier}]`;
+  submitPlan();
+}
+
+function downloadClientMarkdown() {
+  if (!currentPlanData) return;
+  const p = currentPlanData;
+  let md = `# ${p.summary || 'Travel Plan'}\n\n`;
+  md += `## Itinerary\n`;
+  (p.days || []).forEach(d => {
+    md += `### ${d.day}\n`;
+    if (d.morning) md += `- **Morning:** ${d.morning}\n`;
+    if (d.afternoon) md += `- **Afternoon:** ${d.afternoon}\n`;
+    if (d.evening) md += `- **Evening:** ${d.evening}\n`;
+    if (d.cost) md += `- **Cost:** ${d.cost}\n`;
+    md += `\n`;
+  });
+  if (p.weatherNote) md += `## Weather Note\n${p.weatherNote}\n\n`;
+  if (p.packingList) md += `## Packing List\n${p.packingList.map(x => `- [ ] ${x}`).join('\n')}\n\n`;
+  if (p.culturalTips) md += `## Cultural Etiquette\n${p.culturalTips.map(x => `- ${x}`).join('\n')}\n\n`;
+  if (p.tips) md += `## Tips\n${p.tips.map(x => `- ${x}`).join('\n')}\n\n`;
+
+  const blob = new Blob([md], { type: 'text/markdown' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `travel_plan_${Date.now()}.md`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 async function saveCurrentPlan(btn) {
