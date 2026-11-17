@@ -1166,8 +1166,51 @@ body.plan-nav-active .main {
 }
 
 /* ═════════════════════════════════════════════════════════════════
-   MOBILE & TOUCH ENHANCEMENTS
+   RESPONSIVE DESIGN: MOBILE, TABLET, LAPTOP, PC
    ═════════════════════════════════════════════════════════════════ */
+
+/* ── Large Desktop / PC (> 1200px) ── */
+@media (min-width: 1200px) {
+  .nav-inner, .flash-wrap, .main {
+    max-width: 1240px;
+  }
+  .plan-footer-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ── Laptop / Tablet Landscape (769px – 1024px) ── */
+@media (max-width: 1024px) {
+  .nav-inner {
+    padding: 0 1.5rem;
+  }
+  .main {
+    padding: 0 1.5rem 4rem;
+  }
+  .plan-header {
+    padding: 20px 22px;
+  }
+  .plan-map-container #itinerary-map {
+    height: 280px !important;
+  }
+}
+
+/* ── Tablet Portrait (641px – 768px) ── */
+@media (max-width: 768px) {
+  .plan-footer-cards {
+    grid-template-columns: 1fr;
+  }
+  .replan-bar {
+    border-radius: var(--r-md);
+    padding: 10px 14px;
+  }
+  .replan-label {
+    width: 100%;
+    margin-bottom: 4px;
+  }
+}
+
+/* ── Mobile Phones (<= 640px) ── */
 @media (max-width: 640px) {
   .nav-inner {
     padding: 0 1rem;
@@ -1177,10 +1220,14 @@ body.plan-nav-active .main {
     display: none;
   }
   .nav-links {
-    gap: 2px;
+    gap: 3px;
   }
   .nav-link {
     padding: 5px 8px;
+    font-size: 12px;
+  }
+  .btn-profile {
+    padding: 5px 10px;
     font-size: 12px;
   }
   .main {
@@ -1202,7 +1249,7 @@ body.plan-nav-active .main {
     gap: 8px;
   }
   .chip {
-    padding: 6px 12px;
+    padding: 7px 12px;
     font-size: 12px;
   }
   .form-actions {
@@ -1212,8 +1259,32 @@ body.plan-nav-active .main {
     width: 100%;
     justify-content: center;
   }
+  .plan-header {
+    padding: 18px 16px;
+    border-radius: var(--r-md);
+  }
+  .plan-summary {
+    font-size: 14px;
+  }
+  .plan-day-head {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  .plan-time-slot {
+    flex-direction: column;
+    gap: 4px;
+  }
+  .plan-slot-label {
+    min-width: unset;
+  }
   .plan-footer-cards {
     grid-template-columns: 1fr;
+  }
+  .plan-footer-card {
+    padding: 14px 14px;
+  }
+  .plan-map-container #itinerary-map {
+    height: 240px !important;
   }
   .responsive-table-card {
     padding: 8px;
