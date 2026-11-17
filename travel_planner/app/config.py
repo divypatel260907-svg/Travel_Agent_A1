@@ -28,10 +28,16 @@ class Config:
         if os.getenv("RENDER") or os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME")
         else str(_instance_dir / "travel.db")
     )
-    SQLALCHEMY_DATABASE_URI: str = os.getenv(
-        "DATABASE_URL",
-        f"sqlite:///{_default_db}",
-    )
+    _raw_db_url = os.getenv("DATABASE_URL")
+    if _raw_db_url:
+        # Normalize legacy postgres:// to postgresql+psycopg:// for SQLAlchemy 2.0+
+        if _raw_db_url.startswith("postgres://"):
+            _raw_db_url = _raw_db_url.replace("postgres://", "postgresql+psycopg://", 1)
+        elif _raw_db_url.startswith("postgresql://"):
+            _raw_db_url = _raw_db_url.replace("postgresql://", "postgresql+psycopg://", 1)
+        SQLALCHEMY_DATABASE_URI: str = _raw_db_url
+    else:
+        SQLALCHEMY_DATABASE_URI: str = f"sqlite:///{_default_db}"
     SQLALCHEMY_TRACK_MODIFICATIONS: bool = False
     SQLALCHEMY_ENGINE_OPTIONS: dict = {"pool_pre_ping": True}
 
