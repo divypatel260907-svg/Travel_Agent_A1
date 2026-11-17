@@ -19,18 +19,18 @@
   </div>
 
   <!-- Recent users -->
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:8px; flex-wrap:wrap;">
     <h2 style="font-size:15px;font-weight:600;color:var(--text-1);">Recent Users</h2>
     <a href="{{ url_for('admin.users') }}" class="btn btn-ghost" style="padding:4px 10px;font-size:12px;">View all users →</a>
   </div>
-  <div class="card" style="margin-bottom:28px;overflow-x:auto;">
-    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+  <div class="card responsive-table-card" style="margin-bottom:28px;overflow-x:auto;-webkit-overflow-scrolling:touch;">
+    <table style="width:100%;min-width:480px;border-collapse:collapse;font-size:13px;">
       <thead>
         <tr style="border-bottom:1px solid var(--border);">
-          <th style="text-align:left;padding:10px 14px;color:var(--text-3);font-weight:600;">Email</th>
-          <th style="text-align:left;padding:10px 14px;color:var(--text-3);font-weight:600;">Name</th>
-          <th style="text-align:left;padding:10px 14px;color:var(--text-3);font-weight:600;">Joined</th>
-          <th style="text-align:left;padding:10px 14px;color:var(--text-3);font-weight:600;">Admin</th>
+          <th style="text-align:left;padding:10px 14px;color:var(--text-3);font-weight:600;min-width:140px;">Email</th>
+          <th style="text-align:left;padding:10px 14px;color:var(--text-3);font-weight:600;min-width:110px;">Name</th>
+          <th style="text-align:left;padding:10px 14px;color:var(--text-3);font-weight:600;min-width:100px;">Joined</th>
+          <th style="text-align:left;padding:10px 14px;color:var(--text-3);font-weight:600;width:60px;">Admin</th>
         </tr>
       </thead>
       <tbody>
@@ -54,13 +54,13 @@
 
   <!-- Recent trips -->
   <h2 style="font-size:15px;font-weight:600;color:var(--text-1);margin-bottom:12px;">Recent Trips</h2>
-  <div class="card" style="overflow-x:auto;">
-    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+  <div class="card responsive-table-card" style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+    <table style="width:100%;min-width:480px;border-collapse:collapse;font-size:13px;">
       <thead>
         <tr style="border-bottom:1px solid var(--border);">
-          <th style="text-align:left;padding:10px 14px;color:var(--text-3);font-weight:600;">Title</th>
-          <th style="text-align:left;padding:10px 14px;color:var(--text-3);font-weight:600;">Owner</th>
-          <th style="text-align:left;padding:10px 14px;color:var(--text-3);font-weight:600;">Created</th>
+          <th style="text-align:left;padding:10px 14px;color:var(--text-3);font-weight:600;min-width:160px;">Title</th>
+          <th style="text-align:left;padding:10px 14px;color:var(--text-3);font-weight:600;min-width:140px;">Owner</th>
+          <th style="text-align:left;padding:10px 14px;color:var(--text-3);font-weight:600;min-width:100px;">Created</th>
         </tr>
       </thead>
       <tbody>

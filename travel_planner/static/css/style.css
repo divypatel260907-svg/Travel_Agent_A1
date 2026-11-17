@@ -1164,3 +1164,66 @@ body.plan-nav-active .main {
   gap: 8px;
   cursor: pointer;
 }
+
+/* ═════════════════════════════════════════════════════════════════
+   MOBILE & TOUCH ENHANCEMENTS
+   ═════════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  .nav-inner {
+    padding: 0 1rem;
+    height: 56px;
+  }
+  .nav-logo-sub {
+    display: none;
+  }
+  .nav-links {
+    gap: 2px;
+  }
+  .nav-link {
+    padding: 5px 8px;
+    font-size: 12px;
+  }
+  .main {
+    padding: 0 1rem;
+  }
+  .hero-below {
+    padding: 24px 0 16px;
+  }
+  .hero-cta {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+  }
+  .hero-cta .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .chips {
+    gap: 8px;
+  }
+  .chip {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  .form-actions {
+    flex-direction: column;
+  }
+  .form-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .plan-footer-cards {
+    grid-template-columns: 1fr;
+  }
+  .responsive-table-card {
+    padding: 8px;
+    border-radius: var(--r-md);
+  }
+  .responsive-table-card table th,
+  .responsive-table-card table td {
+    padding: 8px 10px;
+  }
+  .plan-nav-actions .btn-ghost {
+    display: none;
+  }
+}

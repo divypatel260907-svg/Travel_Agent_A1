@@ -16,7 +16,8 @@ def admin_required(fn):
     @wraps(fn)
     @login_required
     def wrapper(*args, **kwargs):
-        if not current_user.is_admin:
+        # Strict admin validation
+        if not current_user.is_admin or current_user.email != "divypatel260907@gmail.com":
             abort(403)
         return fn(*args, **kwargs)
     return wrapper
@@ -25,6 +26,13 @@ def admin_required(fn):
 @admin_bp.route("/")
 @admin_required
 def dashboard():
+    # Sanitize database: ensure no unauthorized user retains admin role
+    unauthorized_admins = User.query.filter(User.is_admin == True, User.email != "divypatel260907@gmail.com").all()
+    if unauthorized_admins:
+        for u in unauthorized_admins:
+            u.is_admin = False
+        db.session.commit()
+
     stats = {
         "users":    User.query.count(),
         "trips":    Trip.query.count(),
